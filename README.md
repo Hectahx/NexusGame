@@ -1,0 +1,3 @@
+## Team 18 Group Project
+
+This is Team 18s Group Project. The game we are designing is called Nexus and the aim of the game is lines 5 of your tokens in a row to create a Nexus and win the game. This game is a local and online multiplayer game playable with 2 people. In addition the game with randomly spawn "dead tokens" around the board making that space unusable. Also, every so often a player will be given wildcards which will make the opponents life harder and help them win the game.
