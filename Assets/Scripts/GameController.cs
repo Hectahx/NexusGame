@@ -3,29 +3,57 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-
 public class GameController : MonoBehaviour
 {
     //public GameObject[] rawButtonList;
     public List<Text> buttonL = new List<Text>();
     public Text[] buttonList;
     public CreateGrid gridCreator;
+    public WinLogic winLogic;
     public string playerSide;
-    int moves = 0;
+    string playerString = "Wildcard For: ";
+    public bool isReversed { get; set; }
+    public bool isEnabled { get; set; }
+    bool[] isDisabled;
+    string prevPlayer;
     int limit = 5;
-
+    int moves = 0;
+    public Player playerRed = new Player("X");
+    public Player playerBlue = new Player("O");
+    private Color disColor = new Color32(53, 51, 51, 105);
+    public Image redRevCard;
+    public Image blueRevCard;
+    public Image redEnabledCard;
+    public Image blueEnabledCard;
 
     void Awake()
     {
+        GameObject[] reverseCards = GameObject.FindGameObjectsWithTag("reversedCard");
+        foreach (GameObject img in reverseCards)
+        {
+            if (img.name == "RedReverseCard") { redRevCard = img.GetComponent<Image>(); }
+            if (img.name == "BlueReverseCard") { blueRevCard = img.GetComponent<Image>(); }
+            if (img.name == "RedEnabledCard") { redEnabledCard = img.GetComponent<Image>(); }
+            if (img.name == "BlueEnabledCard") { blueEnabledCard = img.GetComponent<Image>(); }
+
+        }
+
+        redRevCard.enabled = false;
+        blueRevCard.enabled = false;
+        blueEnabledCard.enabled = false;
+        redEnabledCard.enabled = false;
+        isDisabled = new bool[(int)(Mathf.Pow(gridCreator.getSize(), 2) + 1)];
         gridCreator.CreateLines();
         gridCreator.CreateButtons();
-        GameObject[] rawButtonList = GameObject.FindGameObjectsWithTag("gameButton");
+
+
+        GameObject[] rawButtonList =
+            GameObject.FindGameObjectsWithTag("gameButton");
         foreach (GameObject button in rawButtonList)
         {
             buttonL.Add(button.GetComponentInChildren<Text>());
         }
         buttonList = buttonL.ToArray();
-
         SetGameControllerReferenceOnButtons();
         playerSide = "X";
     }
@@ -34,7 +62,9 @@ public class GameController : MonoBehaviour
     {
         for (int i = 0; i < buttonList.Length; i++)
         {
-            buttonList[i].GetComponentInParent<GridSpace>().SetGameControllerReference(this);
+            buttonList[i]
+                .GetComponentInParent<GridSpace>()
+                .SetGameControllerReference(this);
         }
     }
 
@@ -45,318 +75,74 @@ public class GameController : MonoBehaviour
 
     void ChangeSides()
     {
-        playerSide = (playerSide == "X") ? "O" : "X"; // Note: Capital Letters for "X" and "O"
+        bool done = false;
+
+        var rand = Random.Range(1, 100);
+
+
+        if (rand >= 85)
+        {
+            while (!done) //this will loop until the button chosen is empty so it wont try to disable an already selected button
+            {
+                rand = Random.Range(1, 100);
+                if (getButtonText(rand) == "empty")
+                {
+                    Button button = GameObject.Find(rand.ToString()).GetComponent<Button>();
+                    ColorBlock cb = button.colors;
+                    cb.normalColor = disColor;
+                    cb.highlightedColor = disColor;
+                    cb.selectedColor = disColor;
+                    cb.pressedColor = disColor;
+                    button.colors = cb;
+                    //button.interactable = false;
+                    isDisabled[rand] = true;
+                    done = true;
+                }
+            }
+
+        }
+        bool boardEnabled = true; //used for debugging
+
+        playerSide = (playerSide == playerRed.side) ? playerBlue.side : playerRed.side;
+        if (moves % 7 == 0 && boardEnabled == true)
+        {
+            Canvas cardPanel = GameObject.FindGameObjectWithTag("cardPanel").GetComponent<Canvas>();
+            Text whichPlayer = GameObject.FindGameObjectWithTag("whichPlayer").GetComponent<Text>();
+            whichPlayer.text = playerString + ((playerSide == "X") ? "<color=red>Red</color>" : "<color=blue>Blue</color>");
+            for (int i = 1; i < Mathf.Pow(gridCreator.getSize(), 2); i++)
+            {
+                if (isDisabled[i] == false)
+                {
+                    Button button = GameObject.Find(i.ToString()).GetComponent<Button>();
+                    button.interactable = false;
+                }
+            }
+            cardPanel.sortingOrder = 1;
+            prevPlayer = playerSide;
+        }
+        //playerSide = (playerSide == playerRed.side) ? playerBlue.side : playerRed.side; // Note: Capital Letters for "X" and "O"
+
+
     }
 
     public void EndTurn(Button button)
     {
         moves++;
-        //Debug.Log(button.name + " was pressed");
-        //if (moves >= 9)
-        //{
-        CheckWin(button);
-        //}
-
+        winLogic = new WinLogic(gridCreator.getSize());
+        if (moves >= 9)
+        {
+            if (winLogic.checkLeftToRight(button) == limit - 1) endGame(); //works
+            if (winLogic.checkRightToLeft(button) == limit - 1) endGame(); //works
+            if (winLogic.checkDownUp(button) == limit - 1) endGame(); //works
+            if (winLogic.checkUpDown(button) == limit - 1) endGame();
+            if (winLogic.checkDiagRightToLeftUp(button) == limit - 1) endGame();//works
+            if (winLogic.checkDiagLeftToRightDown(button) == limit - 1) endGame();
+            if (winLogic.checkDiagRightToLeftDown(button) == limit - 1) endGame();//works
+            if (winLogic.checkDiagLeftToRightUp(button) == limit - 1) endGame();
+        }
+        isDisabled[int.Parse(button.name)] = true;
         ChangeSides();
     }
-
-    void CheckWin(Button button)//i started this on sat/sun and im still not finished on wednesday :/
-    {
-        //bool isConnected = false;
-        int count = 0;
-        int index = int.Parse(button.name);//gets the index of the button that was clicked
-        int lines = gridCreator.getSize();//gets size of the grid
-        int diagRight = lines + 1;
-        int diagLeft = lines - 1;
-
-        int tempIndex = index;
-
-        int position = index % lines;
-        int row = index / lines;
-        //Debug.Log($"Position is {position} and index is {index}");
-
-        if (position >= limit || position == 0) //If true checks the grid from right to left
-        {
-            //This checks standard right to left
-            for (int i = 0; i < limit - 1; i++)
-            {
-                string buttonText1 = getButtonName(index - i);
-                string buttonText2 = getButtonName(index - i - 1);
-                if (buttonText1 == "empty" || buttonText2 == "empty")
-                {
-                    //Debug.Log(buttonText1 == "empty" ? index - i + " is empty" : index - 1 - i + " is empty");
-                    //isConnected = false;
-                    break;
-                }
-
-                if (string.Equals(buttonText1, buttonText2))
-                {
-                    //Debug.Log($"Index {index - i} is {buttonText1} and index {index - 1 - i} is {buttonText2}");
-                    count++;
-                }
-                else
-                {
-                    //Debug.Log("They are not the same");
-                    //isConnected = false;
-                    break;
-                }
-            }
-
-
-            if (count != 4)
-            {
-                //this checks if there is one on the right and 3 on the left
-                count = 0;
-                if (lines - position > 0 && position != 10 && index != 100)
-                {
-                    var buttonText1 = getButtonName(index);
-                    var buttonText2 = getButtonName(index + 1);
-                    if (buttonText1.Equals(buttonText2)) count++;
-                    for (int i = 0; i < limit - 2; i++)
-                    {
-                        buttonText1 = getButtonName(index - i);
-                        buttonText2 = getButtonName(index - i - 1);
-                        if (buttonText1 == "empty" || buttonText2 == "empty") break;
-                        if (buttonText1.Equals(buttonText2)) count++;
-                    }
-
-                }
-            }
-            if (count != 4)
-            {
-                //this checks if there is 2 on the right and 2 on th left
-                count = 0;
-                if (lines - position > 1 && position != 10 & index != 100)
-                {
-                    for (int i = 0; i < limit - 3; i++)
-                    {
-                        var buttonText1 = getButtonName(index + i);
-                        var buttonText2 = getButtonName(index + i + 1);
-                        if (buttonText1 == "empty" || buttonText2 == "empty") break;
-                        if (buttonText1.Equals(buttonText2)) count++;
-                    }
-                    for (int i = 0; i < limit - 3; i++)
-                    {
-                        var buttonText1 = getButtonName(index - i);
-                        var buttonText2 = getButtonName(index - i - 1);
-                        if (buttonText1 == "empty" || buttonText2 == "empty") break;
-                        if (buttonText1.Equals(buttonText2)) count++;
-                    }
-
-                }
-            }
-
-            //Debug.Log($"count is {count}");
-
-            if (count == limit - 1)
-            {
-                Debug.Log("You've Won!");
-                //SetBoardInteractable(true);
-                return;
-            }
-
-
-        }
-
-        count = 0;
-
-        if (lines - position >= limit - 1 && index != 100) //If true checks the grid from left to right
-        {
-            for (int i = 0; i < limit - 1; i++)
-            {
-                string buttonText1 = getButtonName(index + i);
-                string buttonText2 = getButtonName(index + i + 1);
-                if (buttonText1 == "empty" || buttonText2 == "empty")
-                {
-                    break;
-                }
-
-                if (string.Equals(buttonText1, buttonText2))
-                {
-                    count++;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            if (count != 4)
-            {
-                //this checks if theres one on the left and 3 on the right
-                count = 0;
-                if (position > 1)
-                {
-                    var buttonText1 = getButtonName(index);
-                    var buttonText2 = getButtonName(index - 1);
-                    if (buttonText1.Equals(buttonText2)) count++;
-                    for (int i = 0; i < limit - 2; i++)
-                    {
-                        buttonText1 = getButtonName(index + i);
-                        buttonText2 = getButtonName(index + i + 1);
-                        if (buttonText1 == "empty" || buttonText2 == "empty") break;
-                        if (buttonText1.Equals(buttonText2)) count++;
-                    }
-                }
-            }
-
-            if (count != 4)
-            {
-                //this checks if there is 2 on the left and 2 on the right
-                count = 0;
-                if (position > 2)
-                {
-                    for (int i = 0; i < limit - 3; i++)
-                    {
-                        var buttonText1 = getButtonName(index + i);
-                        var buttonText2 = getButtonName(index + i + 1);
-                        if (buttonText1 == "empty" || buttonText2 == "empty") break;
-                        if (buttonText1.Equals(buttonText2)) count++;
-                    }
-                    for (int i = 0; i < limit - 3; i++)
-                    {
-                        var buttonText1 = getButtonName(index - i);
-                        var buttonText2 = getButtonName(index - i - 1);
-                        if (buttonText1 == "empty" || buttonText2 == "empty") break;
-                        if (buttonText1.Equals(buttonText2)) count++;
-                    }
-                }
-            }
-
-            if (count == limit - 1)
-            {
-                Debug.Log("You've Won!");
-                //SetBoardInteractable(true);
-                return;
-            }
-        }
-
-        count = 0;
-
-        if (row + 1 >= limit) //this checks down up
-        {
-            for (int i = 0; i < limit - 1; i++)
-            {
-                string buttonText1 = getButtonName(index - (i * lines));
-                string buttonText2 = getButtonName(index - ((i + 1) * lines));
-                if (buttonText1 == "empty" || buttonText2 == "empty")
-                {
-                    break;
-                }
-                if (string.Equals(buttonText1, buttonText2))
-                {
-                    count++;
-                }
-                else
-                {
-                    break;
-                }
-            }
-        }
-        if (count != 4)
-        {
-            count = 0;
-            if (row >= 3 && row <= lines - 2) // this checks if there is one below and 3 above
-            {
-                string buttonText1 = getButtonName(index);
-                string buttonText2 = getButtonName(index + lines);
-                if (buttonText1.Equals(buttonText2)) count++;
-                for (int i = 0; i < limit - 2; i++)
-                {
-                    buttonText1 = getButtonName(index - (i * lines));
-                    buttonText2 = getButtonName(index - ((i + 1) * lines));
-                    if (buttonText1 == "empty" || buttonText2 == "empty") break;
-                    if (buttonText1.Equals(buttonText2)) count++;
-                }
-            }
-        }
-        if (count != 4)
-        {
-            count = 0;
-            Debug.Log("asd");
-            if (row >= 2 && row <= lines - 3) // this checks if there is one below and 3 above
-            {
-                for (int i = 0; i < limit - 3; i++)
-                {
-                    var buttonText1 = getButtonName(index - (i * lines));
-                    var buttonText2 = getButtonName(index - ((i + 1) * lines));
-                    if (buttonText1 == "empty" || buttonText2 == "empty") break;
-                    if (buttonText1.Equals(buttonText2)) count++;
-                }
-                for (int i = 0; i < limit - 3; i++)
-                {
-                    var buttonText1 = getButtonName(index + (i * lines));
-                    var buttonText2 = getButtonName(index + ((i + 1) * lines));
-                    if (buttonText1 == "empty" || buttonText2 == "empty") break;
-                    if (buttonText1.Equals(buttonText2)) count++;
-                }
-            }
-        }
-
-        if ((position >= limit || position == 0) && row >= limit - 1)
-        {
-            for (int i = 0; i < limit - 1; i++)
-            {
-                string buttonText1 = getButtonName(index - (i * (lines + 1)));
-                string buttonText2 = getButtonName(index - ((i + 1) * (lines + 1)));
-                if (buttonText1 == "empty" || buttonText2 == "empty") break;
-                if (string.Equals(buttonText1, buttonText2)) count++;
-                else break;
-            }
-        }
-        /*
-        if (count != 4)
-        {
-            count = 0;
-            if (position >= limit - 1 && row >= limit - 2)
-            {
-                string buttonText1 = getButtonName(index);
-                string buttonText2 = getButtonName(index - (lines + 1));
-                if (buttonText1.Equals(buttonText2)) count++;
-                for (int i = 0; i < limit - 2; i++)
-                {
-                    buttonText1 = getButtonName(index - (i * (lines + 1)));
-                    buttonText2 = getButtonName(index - ((i + 1) * (lines + 1)));
-                    if (buttonText1 == "empty" || buttonText2 == "empty") break;
-                    if (string.Equals(buttonText1, buttonText2)) count++;
-                    else break;
-                }
-            }
-        }
-        */
-        if (count != 4)
-        {
-            count = 0;
-            if (position >= limit - 2 && row >= limit - 3 && row <= lines - 3)
-            {
-                for (int i = 0; i < limit - 3; i++)
-                {
-                    var buttonText1 = getButtonName(index - (i * (lines + 1)));
-                    var buttonText2 = getButtonName(index - ((i + 1) * (lines + 1)));
-                    if (buttonText1 == "empty" || buttonText2 == "empty") break;
-                    if (string.Equals(buttonText1, buttonText2)) count++;
-                    else break;
-                }
-                for (int i = 0; i < limit - 3; i++)
-                {
-                    var buttonText1 = getButtonName(index + (i * (lines + 1)));
-                    var buttonText2 = getButtonName(index + ((i + 1) * (lines + 1)));
-                    if (buttonText1 == "empty" || buttonText2 == "empty") break;
-                    if (string.Equals(buttonText1, buttonText2)) count++;
-                    else break;
-                }
-            }
-        }
-        
-
-
-
-        Debug.Log(count);
-        if (count == 4) Debug.Log("Yeet");
-
-
-    }
-
 
     void SetBoardInteractable(bool toggle)
     {
@@ -366,12 +152,81 @@ public class GameController : MonoBehaviour
         }
     }
 
-    string getButtonName(int index)
+    string getButtonText(int index)
     {
-        string buttonText = GameObject.Find(index.ToString()).GetComponent<Button>().GetComponentInChildren<Text>().text;
+        string buttonText =
+            GameObject
+                .Find(index.ToString())
+                .GetComponent<Button>()
+                .GetComponentInChildren<Text>()
+                .text;
         buttonText = buttonText == "" ? "empty" : buttonText;
         return buttonText;
     }
 
+    public void endGame()
+    {
+        Debug.Log("You've won!");
+    }
+
+    public void setReversed()
+    {
+        if (playerSide == playerRed.side) redRevCard.enabled = true; playerRed.isReversed = true;
+        if (playerSide == playerBlue.side) blueRevCard.enabled = true; playerBlue.isReversed = true;
+        disableCardPanel();
+    }
+
+    public void setEnabled()//TODO
+    {
+        if (playerSide == playerRed.side) redEnabledCard.enabled = true; playerRed.isEnabled = true;
+        if (playerSide == playerBlue.side) blueEnabledCard.enabled = true; playerBlue.isEnabled = true;
+        disableCardPanel();
+    }
+
+    public void allowEnabled()//TODO
+    {
+        if (playerSide == playerRed.side && playerRed.isEnabled)
+        {
+            isEnabled = true;
+            Debug.Log("Should be enabled");
+
+        }
+        if (playerSide == playerBlue.side && playerBlue.isEnabled)
+        {
+            isEnabled = true;
+            Debug.Log("Should be enabled");
+        }
+
+
+    }
+
+    public void allowReversed() //TODO
+    {
+        if (playerSide == playerRed.side && playerRed.isReversed)
+        {
+            isReversed = true;
+            Debug.Log("Should be enabled");
+
+        }
+        if (playerSide == playerBlue.side && playerBlue.isReversed)
+        {
+            isReversed = true;
+            Debug.Log("Should be enabled");
+        }
+    }
+
+    public void disableCardPanel()
+    {
+        Canvas cardPanel = GameObject.FindGameObjectWithTag("cardPanel").GetComponent<Canvas>();
+        cardPanel.sortingOrder = 0;
+        for (int i = 1; i < Mathf.Pow(gridCreator.getSize(), 2); i++)
+        {
+            if (isDisabled[i] == false)
+            {
+                Button button = GameObject.Find(i.ToString()).GetComponent<Button>();
+                button.interactable = true;
+            }
+        }
+    }
 
 }

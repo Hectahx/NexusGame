@@ -8,20 +8,6 @@ public class CreateGrid : MonoBehaviour
     public GameObject VertLine;
     public GameObject buttons;
     int lines = 10;
-    // Start is called before the first frame update
-    void Start()
-    {
-        /*
-        CreateLines();
-        CreateButtons();
-        */
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
 
     public void CreateLines()
     {
@@ -61,7 +47,7 @@ public class CreateGrid : MonoBehaviour
             for (int j = 0; j < lines; j++)
             {
                 GameObject button = Instantiate(buttons, new Vector3(704 + length / 2 + 1 + (length * j), 540 - length / 2 + 256 - (length * i), 0), Quaternion.identity, GameObject.FindGameObjectWithTag("Canvas").transform);
-                button.transform.localScale = Vector3.one / ratio;
+                button.transform.localScale = Vector3.one / (ratio * 1.1f);
                 button.gameObject.name = count.ToString();
                 count++;
             }
