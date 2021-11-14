@@ -60,13 +60,16 @@ public class GridSpace : MonoBehaviour
             {
                 setButton();
                 redReversed = true;
+                setReversed = true;
             }
             if (gameController.playerBlue.isReversed == true && gameController.playerBlue.side == gameController.playerSide)
             {
                 setButton();
                 blueReversed = true;
+                setReversed = true;
             }
-            setReversed = true;
+
+            gameController.isReversed = false;
         }
         else
         {
@@ -82,25 +85,30 @@ public class GridSpace : MonoBehaviour
 
         if (setReversed)
         {
-            buttonText.text = prevPlayer;
+            Debug.Log("Yeet");
+
             Debug.Log(prevPlayer);
             if (blueReversed)
             {
+                buttonText.text = gameController.playerBlue.side;
                 gameController.blueRevCard.enabled = false;
                 gameController.playerBlue.isReversed = false;
                 gameController.isReversed = false;
             }
             else if (redReversed)
             {
+                buttonText.text = gameController.playerRed.side;
                 gameController.redRevCard.enabled = false;
                 gameController.playerRed.isReversed = false;
                 gameController.isReversed = false;
             }
-
         }
         else
         {
             buttonText.text = gameController.GetPlayerSide();
+            if (buttonText.text == gameController.playerRed.side) { gameController.redPanel.SetActive(false); gameController.bluePanel.SetActive(true); }
+            else if (buttonText.text == gameController.playerBlue.side) { gameController.bluePanel.SetActive(false); gameController.redPanel.SetActive(true); }
+
         }
 
         if (buttonText.text == gameController.playerRed.side) cb.disabledColor = redColor;
@@ -112,6 +120,9 @@ public class GridSpace : MonoBehaviour
         gameController.EndTurn(button);
         prevPlayer = buttonText.text;
 
+        setReversed = false;
+        redReversed = false;
+        blueReversed = false;
     }
 
 

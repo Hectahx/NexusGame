@@ -5,7 +5,18 @@ using UnityEngine.UI;
 
 public class GameController : MonoBehaviour
 {
-    //public GameObject[] rawButtonList;
+
+    /*
+    Precursor, this was code that was made in a rush and looks like ass
+    I haven't had time to clean this up but I will do so after the hack.
+    
+    TODO:
+    Reduce amount of public vars
+    Rewrite some functions e.g. the 
+
+    */
+    public Canvas gameOverPanel; public Text gameOverText;
+    public GameObject redPanel; public GameObject bluePanel;
     public List<Text> buttonL = new List<Text>();
     public Text[] buttonList;
     public CreateGrid gridCreator;
@@ -28,6 +39,7 @@ public class GameController : MonoBehaviour
 
     void Awake()
     {
+        moves = 0;
         GameObject[] reverseCards = GameObject.FindGameObjectsWithTag("reversedCard");
         foreach (GameObject img in reverseCards)
         {
@@ -56,6 +68,8 @@ public class GameController : MonoBehaviour
         buttonList = buttonL.ToArray();
         SetGameControllerReferenceOnButtons();
         playerSide = "X";
+        redPanel.SetActive(true);
+        bluePanel.SetActive(false);
     }
 
     void SetGameControllerReferenceOnButtons()
@@ -104,6 +118,7 @@ public class GameController : MonoBehaviour
         bool boardEnabled = true; //used for debugging
 
         playerSide = (playerSide == playerRed.side) ? playerBlue.side : playerRed.side;
+
         if (moves % 7 == 0 && boardEnabled == true)
         {
             Canvas cardPanel = GameObject.FindGameObjectWithTag("cardPanel").GetComponent<Canvas>();
@@ -120,8 +135,6 @@ public class GameController : MonoBehaviour
             cardPanel.sortingOrder = 1;
             prevPlayer = playerSide;
         }
-        //playerSide = (playerSide == playerRed.side) ? playerBlue.side : playerRed.side; // Note: Capital Letters for "X" and "O"
-
 
     }
 
@@ -141,6 +154,10 @@ public class GameController : MonoBehaviour
             if (winLogic.checkDiagLeftToRightUp(button) == limit - 1) endGame();
         }
         isDisabled[int.Parse(button.name)] = true;
+
+        if(moves == (gridCreator.getSize() * gridCreator.getSize())){
+            endGame(draw:true);
+        }
         ChangeSides();
     }
 
@@ -164,9 +181,12 @@ public class GameController : MonoBehaviour
         return buttonText;
     }
 
-    public void endGame()
+    public void endGame(bool draw = false)
     {
-        Debug.Log("You've won!");
+        SetBoardInteractable(false);
+        string winner = (playerSide == playerRed.side) ? "<color=red>Red</color>" : "<color=blue>Blue</color>";
+        if(!draw) setGameOverText(winner + " Wins!");
+        else setGameOverText("It's a draw!");
     }
 
     public void setReversed()
@@ -227,6 +247,12 @@ public class GameController : MonoBehaviour
                 button.interactable = true;
             }
         }
+    }
+
+    void setGameOverText(string value)
+    {
+        gameOverPanel.sortingOrder = 2;
+        gameOverText.text = value;
     }
 
 }
