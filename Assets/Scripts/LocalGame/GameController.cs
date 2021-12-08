@@ -5,7 +5,6 @@ using UnityEngine.UI;
 
 public class GameController : MonoBehaviour
 {
-
     /*
     Precursor, this was code that was made in a rush and looks like ass
     I haven't had time to clean this up but I will do so after the hack.
@@ -13,7 +12,6 @@ public class GameController : MonoBehaviour
     TODO:
     Reduce amount of public vars
     Rewrite some functions e.g. the 
-
     */
     public Canvas gameOverPanel; public Text gameOverText;
     public GameObject redPanel; public GameObject bluePanel;

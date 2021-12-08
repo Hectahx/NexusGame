@@ -11,6 +11,8 @@ TagManager:
   - cardText
   - whichPlayer
   - reversedCard
+  - ButtonHolder
+  - wildcards
   layers:
   - Default
   - TransparentFX
