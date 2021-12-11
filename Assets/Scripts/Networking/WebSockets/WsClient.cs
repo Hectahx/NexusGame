@@ -20,6 +20,8 @@ public class WsClient : MonoBehaviour
 
     private void Start()
     {
+        gameId = null;
+
         DontDestroyOnLoad(this);
         ws = new WebSocket($"ws://{ip}:{port}");
         ws.Connect();
@@ -64,7 +66,7 @@ public class WsClient : MonoBehaviour
                         Debug.Log($"{color} is your color");
                     }
                 }
-                //sceneLoader.Switch();
+                
                 UnityMainThread.wkr.AddJob(() =>
                 {
                     SceneManager.LoadScene("GameOnline");
@@ -90,7 +92,7 @@ public class WsClient : MonoBehaviour
             Debug.Log("Put ur name there ");
             return;
         }
-        TextEditor te = new TextEditor();
+
         JObject payload = new JObject();
         payload["method"] = "join";
         payload["clientId"] = clientId;

@@ -21,9 +21,10 @@ internal class UnityMainThread : MonoBehaviour
             {
                 jobs.Dequeue().Invoke();
             }
-            catch
+            catch (Exception ex)
             {
-                Debug.Log("Thread helper shit itself again");
+                //Debug.Log("Thread helper shit itself again");
+                Debug.Log(ex);
             }
     }
 

@@ -7,7 +7,7 @@ using Newtonsoft.Json.Linq;
 public class GameControllerOnline : MonoBehaviour
 {
     public List<Text> buttonL = new List<Text>();
-    public Text[] buttonList;
+    public static Text[] buttonList;
     public CreateGrid gridCreator;
     private Color disColor = new Color32(53, 51, 51, 105);
     private WebSocket ws;
@@ -15,8 +15,10 @@ public class GameControllerOnline : MonoBehaviour
 
     void Awake()
     {
-        GameObject cardPanel = GameObject.FindGameObjectWithTag("cardPanel");
-        cardPanel.SetActive(false);
+        GameObject[] cardPanels = GameObject.FindGameObjectsWithTag("cardPanel");
+        foreach (GameObject cardPanel in cardPanels) cardPanel.SetActive(false);
+
+
         disableCards();
         gridCreator.CreateButtons();
         gridCreator.CreateLines();
@@ -41,6 +43,7 @@ public class GameControllerOnline : MonoBehaviour
                 string color = winner["color"].ToString();
                 string clientId = winner["clientId"].ToString();
                 string clientName = winner["clientName"].ToString();
+                if(color == WsClient.color) Debug.Log("I've won");
 
                 UnityMainThread.wkr.AddJob(() =>
                 {
@@ -103,6 +106,25 @@ public class GameControllerOnline : MonoBehaviour
                 });
 
             }
+            if (response["method"].ToString() == "doomCards")
+            {
+                string currentColor = response["currentColor"].ToString();
+
+                if (currentColor == WsClient.color) playable = true;
+                else playable = false;
+
+                UnityMainThread.wkr.AddJob(() =>
+                {
+
+                    string currentColor = response["currentColor"].ToString();
+                    string currentName = response["name"].ToString();
+                    Canvas mainCanvas = GameObject.Find("Canvas").GetComponent<Canvas>();
+                    GameObject cardPanel = mainCanvas.transform.Find("Doom Card Panel").gameObject;
+                    cardPanel.SetActive(true);
+                    cardPanel.GetComponentInChildren<Text>().text = $"Doom Card for: <color={currentColor}>{currentName}</color>";
+
+                });
+            }
 
             if (response["method"].ToString() == "removeCard")
             {
@@ -131,6 +153,19 @@ public class GameControllerOnline : MonoBehaviour
                 });
 
             }
+            if (response["method"].ToString() == "skipTurn")
+            {
+                string oldColor = response["oldColor"].ToString();
+                string newColor = response["newColor"].ToString();
+                if (newColor == WsClient.color) playable = true;
+                else playable = false;
+                UnityMainThread.wkr.AddJob(() =>
+                {
+                    Canvas mainCanvas = GameObject.Find("Canvas").GetComponent<Canvas>();
+                    GameObject doomCardPanel = mainCanvas.transform.Find("Doom Card Panel").gameObject;
+                    doomCardPanel.SetActive(false);
+                });
+            }
         };
     }
 
@@ -142,24 +177,12 @@ public class GameControllerOnline : MonoBehaviour
         }
     }
 
-    void SetBoardInteractable(bool toggle)
+    static void SetBoardInteractable(bool toggle)
     {
         for (int i = 0; i < buttonList.Length; i++)
         {
             buttonList[i].GetComponentInParent<Button>().interactable = toggle;
         }
-    }
-
-    string getButtonText(int index)
-    {
-        string buttonText =
-            GameObject
-                .Find(index.ToString())
-                .GetComponent<Button>()
-                .GetComponentInChildren<Text>()
-                .text;
-        buttonText = buttonText == "" ? "empty" : buttonText;
-        return buttonText;
     }
 
     void disableCards()

@@ -42,7 +42,7 @@ public class CardHandler : MonoBehaviour
         WsClient.ws.Send(payload.ToString());
     }
 
-        public void setEnabledCard()
+    public void setEnabledCard()
     {
         //Debug.Log("Enabled Card in use");
         JObject payload = new JObject();
@@ -50,6 +50,31 @@ public class CardHandler : MonoBehaviour
         payload["type"] = "enabledCard";
         payload["color"] = WsClient.color;
         payload["clientId"] = WsClient.clientId;
+        payload["gameId"] = WsClient.gameId;
+        WsClient.ws.Send(payload.ToString());
+    }
+
+    /*
+    *Doom cards
+    */
+
+    public void skipTurn()
+    {
+        //Debug.Log("Reverse Card Clicked");
+        JObject payload = new JObject();
+        payload["method"] = "doomCards";
+        payload["type"] = "skipTurn";
+        payload["color"] = WsClient.color;
+        payload["gameId"] = WsClient.gameId;
+        WsClient.ws.Send(payload.ToString());
+    }
+    public void snatchCard()
+    {
+        //Debug.Log("Reverse Card Clicked");
+        JObject payload = new JObject();
+        payload["method"] = "doomCards";
+        payload["type"] = "snatchCard";
+        payload["color"] = WsClient.color;
         payload["gameId"] = WsClient.gameId;
         WsClient.ws.Send(payload.ToString());
     }

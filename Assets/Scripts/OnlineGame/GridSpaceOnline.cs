@@ -71,8 +71,9 @@ public class GridSpaceOnline : MonoBehaviour
 
                 UnityMainThread.wkr.AddJob(() =>
                 {
+                    GameObject[] cardPanels = GameObject.FindGameObjectsWithTag("cardPanel");
+                    foreach (GameObject cardPanel in cardPanels) cardPanel.SetActive(false);
                     Button button = GameObject.Find(buttonId.ToString()).GetComponent<Button>();
-                    button.interactable = false;
                     if (color == "red") { playerColor = Color.red; }
                     else if (color == "blue") { playerColor = Color.blue; }
                     else if (color == "purple") { playerColor = new Color32(190, 0, 255, 255); }
@@ -80,7 +81,22 @@ public class GridSpaceOnline : MonoBehaviour
                     ColorBlock cb = button.colors;
                     cb.disabledColor = playerColor;
                     button.colors = cb;
+                    button.interactable = false;
 
+                });
+            }
+            if (response["method"].ToString() == "snatch")
+            {
+                string buttonId = response["button"].ToString();
+
+                UnityMainThread.wkr.AddJob(() =>
+                {
+                    Button button = GameObject.Find(buttonId.ToString()).GetComponent<Button>();
+                    button.interactable = true;
+                    Debug.Log($"Token {buttonId} was snatched");
+                    Canvas mainCanvas = GameObject.Find("Canvas").GetComponent<Canvas>();
+                    GameObject doomCardPanel = mainCanvas.transform.Find("Doom Card Panel").gameObject;
+                    doomCardPanel.SetActive(false);
                 });
             }
         };
