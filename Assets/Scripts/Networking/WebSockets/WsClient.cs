@@ -1,14 +1,21 @@
 using UnityEngine;
-using WebSocketSharp;
+//using WebSocketSharp;
 using UnityEngine.UI;
+using UnityEditor;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine.SceneManagement;
+//using HybridWebSocket;
+using NativeWebSocket;
+using System.Text;
+using System.IO;
+
 public class WsClient : MonoBehaviour
 {
     public static WebSocket ws;
     public int port = 6969;
-    public string ip = "127.0.0.1";
+    public string localIP = "127.0.0.1";
+    public string publicIP = "143.244.213.81";
     public InputField gameIdField;
     public InputField nameField;
     public static string clientId;
@@ -17,21 +24,30 @@ public class WsClient : MonoBehaviour
     public static string color;
     public static JToken game;
     public static string clientName;
+    public TextAsset profanityList;
 
-    private void Start()
+    private async void Start()
     {
+        
         gameId = null;
 
         DontDestroyOnLoad(this);
-        ws = new WebSocket($"ws://{ip}:{port}");
-        ws.Connect();
-        ws.OnMessage += (sender, message) =>
+
+
+        ws = new WebSocket($"ws://{publicIP}:{port}");
+        //ws = WebSocketFactory.CreateInstance($"ws://{ip}:{port}");
+        await ws.Connect();
+        ws.OnMessage += (message) =>
         {
-            JObject response = JObject.Parse(message.Data);
+            Debug.Log(message);
+            JObject response = JObject.Parse(Encoding.UTF8.GetString(message));
             if (response["method"].ToString() == "connect")
             {
+                Debug.Log(response["clientId"].ToString());
+
                 clientId = response["clientId"].ToString();
                 Debug.Log($"Client ID set successfully: {clientId}");
+                Debug.Log("Connected successfully");
             }
 
             if (response["method"].ToString() == "create")
@@ -49,6 +65,8 @@ public class WsClient : MonoBehaviour
                     te.SelectAll();
                     te.Copy();
                 });
+
+                Debug.Log("Created successfully");
             }
 
             if (response["method"].ToString() == "join")
@@ -66,21 +84,22 @@ public class WsClient : MonoBehaviour
                         Debug.Log($"{color} is your color");
                     }
                 }
-                
+
                 UnityMainThread.wkr.AddJob(() =>
                 {
                     SceneManager.LoadScene("GameOnline");
                 });
             }
         };
+
     }
 
     public void createRoom()
     {
         JObject payload = new JObject();
         payload["method"] = "create";
-        ws.Send(payload.ToString());
-
+        //ws.Send(payload.ToString());
+        ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
     }
 
     public void joinRoom()
@@ -93,11 +112,29 @@ public class WsClient : MonoBehaviour
             return;
         }
 
+        string[] profFilter = profanityList.text.Split('\n');
+
+        foreach(string prof in profFilter){
+            if(prof.Contains(clientName)){
+                Debug.Log("This name contains profanity, please enter a new name");
+                return;
+            }
+        }
+
+        Debug.Log(clientId);
+        Debug.Log(gameId);
+
         JObject payload = new JObject();
         payload["method"] = "join";
         payload["clientId"] = clientId;
         payload["name"] = clientName;
         payload["gameId"] = gameId;
-        ws.Send(payload.ToString());
+        //ws.Send(payload.ToString());
+        ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
+    }
+
+    private async void OnApplicationQuit()
+    {
+        await ws.Close();
     }
 }

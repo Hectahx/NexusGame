@@ -3,8 +3,10 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using WebSocketSharp;
-using Newtonsoft.Json.Linq;
+//using WebSocketSharp;
+//using HybridWebSocket;
+using NativeWebSocket;using Newtonsoft.Json.Linq;
+using System.Text;
 
 public class GridSpaceOnline : MonoBehaviour
 {
@@ -17,10 +19,14 @@ public class GridSpaceOnline : MonoBehaviour
     private string prevPlayer;
     private WebSocket ws;
     public static bool[] isDisabled;
+    string gameId = WsClient.gameId;
+
+    AudioSource buttonClickSound;
 
 
     private void Start()
     {
+        buttonClickSound = GetComponent<AudioSource>();
         Canvas waitingCanvas = GameObject.Find("Waiting Canvas").GetComponent<Canvas>();
         waitingCanvas.sortingOrder = 1;
         isDisabled = new bool[(int)(Mathf.Pow(WsClient.size, 2))];
@@ -29,6 +35,7 @@ public class GridSpaceOnline : MonoBehaviour
         Text purpleText = GameObject.Find("PurpleIdentify").GetComponent<Text>();
         Text greenText = GameObject.Find("GreenIdentify").GetComponent<Text>();
         Text playerText = GameObject.Find("PlayerText").GetComponent<Text>();
+        Text gameIdText = GameObject.Find("GameCode").GetComponent<Text>();
         playerText.text = WsClient.clientName;
 
         JArray clients = (JArray)WsClient.game["clients"];
@@ -42,13 +49,16 @@ public class GridSpaceOnline : MonoBehaviour
             if (clientColor == "purple") purpleText.text = cName;
             if (clientColor == "green") greenText.text = cName;
         }
+        gameIdText.text = "Game Code : " + gameId;
 
 
         ws = WsClient.ws;
 
-        ws.OnMessage += (sender, message) =>
+        //ws.OnMessage += (sender, message) =>
+        ws.OnMessage += (message) =>
         {
-            JObject response = JObject.Parse(message.Data);
+            //JObject response = JObject.Parse(message.Data);
+            JObject response = JObject.Parse(Encoding.UTF8.GetString(message));
             if (response["method"].ToString() == "start")
             {
                 UnityMainThread.wkr.AddJob(() =>
@@ -82,6 +92,7 @@ public class GridSpaceOnline : MonoBehaviour
                     cb.disabledColor = playerColor;
                     button.colors = cb;
                     button.interactable = false;
+                    buttonClickSound.Play();
 
                 });
             }
@@ -128,7 +139,9 @@ public class GridSpaceOnline : MonoBehaviour
         payload["buttonId"] = button.name;
         payload["color"] = WsClient.color;
         payload["clientName"] = WsClient.clientName;
-        ws.Send(payload.ToString());
+        //ws.Send(payload.ToString());
+        ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
+
     }
 
 

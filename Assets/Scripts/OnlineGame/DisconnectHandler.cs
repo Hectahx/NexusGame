@@ -2,21 +2,29 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using WebSocketSharp;
+//using WebSocketSharp;
+//using HybridWebSocket;
+using NativeWebSocket;
 using Newtonsoft.Json.Linq;
 using UnityEngine.SceneManagement;
+using System.Text;
+using System.Collections;
 
 
 public class DisconnectHandler : MonoBehaviour
 {
+    //private WebSocket ws;
     private WebSocket ws;
     private void Start()
     {
         ws = WsClient.ws;
 
-        ws.OnMessage += (sender, message) =>
+        //ws.OnMessage += (sender, message) =>
+        ws.OnMessage += (message) =>
         {
-            JObject response = JObject.Parse(message.Data);
+            JObject response = JObject.Parse(Encoding.UTF8.GetString(message));
+            //JObject response = JObject.Parse(message.Data);
+
             if (response["method"].ToString() == "timeout")
             {
                 string color = response["color"].ToString();
@@ -83,6 +91,7 @@ public class DisconnectHandler : MonoBehaviour
                             gameOverText.text = $"You have won by default";
 
                             Debug.Log($"You have won by default");
+
                         }
                     });
                 }
@@ -122,6 +131,8 @@ public class DisconnectHandler : MonoBehaviour
                     gameOverText.text = $"You have won by default";
 
                     Debug.Log($"You have won by default");
+                    
+                    StartCoroutine(returnToHome());
 
 
                 });
@@ -137,6 +148,14 @@ public class DisconnectHandler : MonoBehaviour
         payload["method"] = "timeout";
         payload["gameId"] = WsClient.gameId;
         payload["color"] = WsClient.color;
-        ws.Send(payload.ToString());
+        //ws.Send(payload.ToString());
+        ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
+    }
+
+    IEnumerator returnToHome()
+    {
+        yield return new WaitForSecondsRealtime(5);
+
+        SceneManager.LoadSceneAsync("MainDevelop");
     }
 }

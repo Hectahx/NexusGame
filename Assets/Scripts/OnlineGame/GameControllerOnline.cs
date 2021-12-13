@@ -2,15 +2,24 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using WebSocketSharp;
+//using WebSocketSharp;
+//using HybridWebSocket;
+using NativeWebSocket;
 using Newtonsoft.Json.Linq;
+using System.Text;
+using UnityEngine.SceneManagement;
+using System.Collections;
 public class GameControllerOnline : MonoBehaviour
 {
     public List<Text> buttonL = new List<Text>();
     public static Text[] buttonList;
     public CreateGrid gridCreator;
     private Color disColor = new Color32(53, 51, 51, 105);
+
     private WebSocket ws;
+
+
+
     public static bool playable;//this checks if the current player can play
 
     void Awake()
@@ -34,16 +43,18 @@ public class GameControllerOnline : MonoBehaviour
 
     void Start()
     {
-        ws.OnMessage += (sender, message) =>
+        //ws.OnMessage += (sender, message) =>
+        ws.OnMessage += (message) =>
         {
-            JObject response = JObject.Parse(message.Data);
+            JObject response = JObject.Parse(Encoding.UTF8.GetString(message));
+            //JObject response = JObject.Parse(message.Data);
             if (response["method"].ToString() == "win")
             {
                 JToken winner = response["winner"];
                 string color = winner["color"].ToString();
                 string clientId = winner["clientId"].ToString();
                 string clientName = winner["clientName"].ToString();
-                if(color == WsClient.color) Debug.Log("I've won");
+                if (color == WsClient.color) Debug.Log("I've won");
 
                 UnityMainThread.wkr.AddJob(() =>
                 {
@@ -52,6 +63,7 @@ public class GameControllerOnline : MonoBehaviour
                     gameOverCanvas.sortingOrder = 1;
                     gameOverText.text = $"<color={color}>{clientName} won</color>";
                     SetBoardInteractable(false);
+                    StartCoroutine(returnToHome());
                 });
             }
             if (response["method"].ToString() == "move")
@@ -143,7 +155,7 @@ public class GameControllerOnline : MonoBehaviour
                 UnityMainThread.wkr.AddJob(() =>
                 {
                     Button button = GameObject.Find(buttonId).GetComponent<Button>();
-                    Color disColor = new Color32(53, 51, 51, 105);
+                    Color disColor = new Color32(53, 51, 51, 250);
                     ColorBlock cb = button.colors;
                     cb.normalColor = disColor;
                     cb.highlightedColor = disColor;
@@ -225,6 +237,14 @@ public class GameControllerOnline : MonoBehaviour
             if (cardType == "extraCard") GameObject.Find("GreenExtra").GetComponent<Image>().enabled = toggle;
             else if (cardType == "enabledCard") GameObject.Find("GreenEnabled").GetComponent<Image>().enabled = toggle;
         }
+    }
+
+
+    IEnumerator returnToHome()
+    {
+        yield return new WaitForSecondsRealtime(5);
+
+        SceneManager.LoadSceneAsync("MainDevelop");
     }
 
 }

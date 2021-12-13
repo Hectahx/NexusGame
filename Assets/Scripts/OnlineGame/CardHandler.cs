@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Newtonsoft.Json.Linq;
+using System.Text;
 
 public class CardHandler : MonoBehaviour
 {
@@ -15,7 +16,8 @@ public class CardHandler : MonoBehaviour
         payload["type"] = "extraCard";
         payload["color"] = WsClient.color;
         payload["gameId"] = WsClient.gameId;
-        WsClient.ws.Send(payload.ToString());
+        //WsClient.ws.Send(payload.ToString());
+        WsClient.ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
     }
 
     public void enabledCard()
@@ -27,7 +29,8 @@ public class CardHandler : MonoBehaviour
         payload["color"] = WsClient.color;
         payload["clientId"] = WsClient.clientId;
         payload["gameId"] = WsClient.gameId;
-        WsClient.ws.Send(payload.ToString());
+        WsClient.ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
+
     }
 
     public void setExtraCard()
@@ -39,7 +42,8 @@ public class CardHandler : MonoBehaviour
         payload["color"] = WsClient.color;
         payload["clientId"] = WsClient.clientId;
         payload["gameId"] = WsClient.gameId;
-        WsClient.ws.Send(payload.ToString());
+        WsClient.ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
+
     }
 
     public void setEnabledCard()
@@ -51,7 +55,8 @@ public class CardHandler : MonoBehaviour
         payload["color"] = WsClient.color;
         payload["clientId"] = WsClient.clientId;
         payload["gameId"] = WsClient.gameId;
-        WsClient.ws.Send(payload.ToString());
+        WsClient.ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
+
     }
 
     /*
@@ -66,7 +71,8 @@ public class CardHandler : MonoBehaviour
         payload["type"] = "skipTurn";
         payload["color"] = WsClient.color;
         payload["gameId"] = WsClient.gameId;
-        WsClient.ws.Send(payload.ToString());
+        WsClient.ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
+
     }
     public void snatchCard()
     {
@@ -76,6 +82,7 @@ public class CardHandler : MonoBehaviour
         payload["type"] = "snatchCard";
         payload["color"] = WsClient.color;
         payload["gameId"] = WsClient.gameId;
-        WsClient.ws.Send(payload.ToString());
+        WsClient.ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
+
     }
 }
