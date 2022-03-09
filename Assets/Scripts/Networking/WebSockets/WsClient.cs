@@ -1,14 +1,13 @@
 using UnityEngine;
 //using WebSocketSharp;
 using UnityEngine.UI;
-using UnityEditor;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine.SceneManagement;
 //using HybridWebSocket;
 using NativeWebSocket;
 using System.Text;
-using System.IO;
+using System.Collections.Generic;
 
 public class WsClient : MonoBehaviour
 {
@@ -25,29 +24,33 @@ public class WsClient : MonoBehaviour
     public static JToken game;
     public static string clientName;
     public TextAsset profanityList;
+    public static List<Game> gameList;
+    public GameObject test;
 
     private async void Start()
     {
-        
+
         gameId = null;
 
         DontDestroyOnLoad(this);
 
+        ws = new WebSocket($"ws://{localIP}:{port}");
 
-        ws = new WebSocket($"ws://{publicIP}:{port}");
-        //ws = WebSocketFactory.CreateInstance($"ws://{ip}:{port}");
-        await ws.Connect();
+
+        ws.OnOpen += () =>
+        {
+            Debug.Log("Connection open!");
+        };
         ws.OnMessage += (message) =>
         {
-            Debug.Log(message);
             JObject response = JObject.Parse(Encoding.UTF8.GetString(message));
             if (response["method"].ToString() == "connect")
             {
-                Debug.Log(response["clientId"].ToString());
-
                 clientId = response["clientId"].ToString();
-                Debug.Log($"Client ID set successfully: {clientId}");
-                Debug.Log("Connected successfully");
+                //string games = "[\n" + response["games"].ToString() + "\n ]";
+                string gameString = response["games"].ToString();
+                Debug.Log(gameString);
+                gameList = JsonConvert.DeserializeObject<List<Game>>(gameString);
             }
 
             if (response["method"].ToString() == "create")
@@ -60,10 +63,8 @@ public class WsClient : MonoBehaviour
 
                 UnityMainThread.wkr.AddJob(() =>
                 {
-                    TextEditor te = new TextEditor();
-                    te.text = gameId;
-                    te.SelectAll();
-                    te.Copy();
+                    gameId.CopyToClipboard();
+                    joinRoom();
                 });
 
                 Debug.Log("Created successfully");
@@ -92,6 +93,8 @@ public class WsClient : MonoBehaviour
             }
         };
 
+        await ws.Connect();
+
     }
 
     public void createRoom()
@@ -108,21 +111,20 @@ public class WsClient : MonoBehaviour
         if (gameIdField.text.Trim().Length > 0) gameId = gameIdField.text.Trim();
         if (clientName == "")
         {
-            Debug.Log("Put ur name there ");
+            Debug.Log("Put your name there ");
             return;
         }
 
         string[] profFilter = profanityList.text.Split('\n');
 
-        foreach(string prof in profFilter){
-            if(prof.Contains(clientName)){
+        foreach (string prof in profFilter)
+        {
+            if (clientName.Contains(prof))
+            {
                 Debug.Log("This name contains profanity, please enter a new name");
                 return;
             }
         }
-
-        Debug.Log(clientId);
-        Debug.Log(gameId);
 
         JObject payload = new JObject();
         payload["method"] = "join";
@@ -136,5 +138,12 @@ public class WsClient : MonoBehaviour
     private async void OnApplicationQuit()
     {
         await ws.Close();
+    }
+
+    private void Update()
+    {
+#if !UNITY_WEBGL || UNITY_EDITOR
+        ws.DispatchMessageQueue();
+#endif
     }
 }

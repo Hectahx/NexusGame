@@ -131,11 +131,15 @@ public class DisconnectHandler : MonoBehaviour
                     gameOverText.text = $"You have won by default";
 
                     Debug.Log($"You have won by default");
-                    
+
                     StartCoroutine(returnToHome());
 
 
                 });
+            }
+            if (response["method"].ToString() == "noShow")
+            {
+                SceneManager.LoadSceneAsync("MainDevelop");
             }
 
 
@@ -157,5 +161,12 @@ public class DisconnectHandler : MonoBehaviour
         yield return new WaitForSecondsRealtime(5);
 
         SceneManager.LoadSceneAsync("MainDevelop");
+    }
+
+    void Update()
+    {
+#if !UNITY_WEBGL || UNITY_EDITOR
+        ws.DispatchMessageQueue();
+#endif
     }
 }

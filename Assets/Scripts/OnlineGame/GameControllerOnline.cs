@@ -247,4 +247,11 @@ public class GameControllerOnline : MonoBehaviour
         SceneManager.LoadSceneAsync("MainDevelop");
     }
 
+        void Update()
+    {
+    #if !UNITY_WEBGL || UNITY_EDITOR
+        ws.DispatchMessageQueue();
+    #endif
+    }
+
 }

@@ -5,7 +5,8 @@ using UnityEngine;
 using UnityEngine.UI;
 //using WebSocketSharp;
 //using HybridWebSocket;
-using NativeWebSocket;using Newtonsoft.Json.Linq;
+using NativeWebSocket;
+using Newtonsoft.Json.Linq;
 using System.Text;
 
 public class GridSpaceOnline : MonoBehaviour
@@ -142,6 +143,13 @@ public class GridSpaceOnline : MonoBehaviour
         //ws.Send(payload.ToString());
         ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
 
+    }
+
+    void Update()
+    {
+    #if !UNITY_WEBGL || UNITY_EDITOR
+        ws.DispatchMessageQueue();
+    #endif
     }
 
 
