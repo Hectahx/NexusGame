@@ -12,11 +12,12 @@ public class AudioManager : MonoBehaviour
     public Button muteButton;
     AudioSource mainMenu;
 
-    bool isMute = false;
+    bool isMute = true;
 
     void Start()
     {
         //DontDestroyOnLoad(this);
+        muteButton.image.sprite = MuteIcon;
         mainMenu = gameObject.GetComponent<AudioSource>();
         mainMenu.Play();
     }

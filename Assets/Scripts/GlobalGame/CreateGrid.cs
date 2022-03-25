@@ -8,11 +8,19 @@ public class CreateGrid : MonoBehaviour
     public GameObject VertLine;
     public GameObject buttons;
     int lines = WsClient.size;
+    int height = Screen.height;
+    int width = Screen.width;
+    float heightRatio = Screen.height / 1920;
+    float widthRatio = Screen.width / 1080;
+
 
     public void CreateLines()
     {
+
+
+
         int count = 0;
-        for (float x = 704; x <= 512 + 704; x += 512 / lines)
+        for (float x = (704) ; x <= (512 + 704); x += (512 / lines) ) //This covers width
         {
             count++;
             if (count == 1 || count == lines + 1) { }
@@ -22,7 +30,7 @@ public class CreateGrid : MonoBehaviour
             }
         }
         count = 0;
-        for (float y = 540 - 256; y <= 256 + 540; y += 512 / lines)
+        for (float y = 540 - 256; y <= 256 + 540; y += 512 / lines) //This covers height
         {
             count++;
             if (count == 1 || count == lines + 1) { }
@@ -54,7 +62,8 @@ public class CreateGrid : MonoBehaviour
         }
     }
 
-    public int getSize(){
+    public int getSize()
+    {
         return lines;
     }
 }

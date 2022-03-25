@@ -31,7 +31,6 @@ public class GameControllerOnline : MonoBehaviour
         disableCards();
         gridCreator.CreateButtons();
         gridCreator.CreateLines();
-
         //isDisabled = new bool[(int)(Mathf.Pow(gridCreator.getSize(), 2))];
         GameObject[] rawButtonList = GameObject.FindGameObjectsWithTag("gameButton");
         foreach (GameObject button in rawButtonList) buttonL.Add(button.GetComponentInChildren<Text>());

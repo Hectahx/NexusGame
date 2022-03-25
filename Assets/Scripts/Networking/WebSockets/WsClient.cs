@@ -34,7 +34,8 @@ public class WsClient : MonoBehaviour
 
         DontDestroyOnLoad(this);
 
-        ws = new WebSocket($"ws://{localIP}:{port}");
+        //ws = new WebSocket($"ws://{localIP}:{port}");
+        ws = new WebSocket($"ws://{publicIP}:{port}");
 
 
         ws.OnOpen += () =>
@@ -108,7 +109,7 @@ public class WsClient : MonoBehaviour
     public void joinRoom()
     {
         clientName = nameField.text;
-        if (gameIdField.text.Trim().Length > 0) gameId = gameIdField.text.Trim();
+        if (gameIdField.text.Trim().Length > 0) gameId = gameIdField.text.Trim().ToUpper();
         if (clientName == "")
         {
             Debug.Log("Put your name there ");
