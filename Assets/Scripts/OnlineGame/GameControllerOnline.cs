@@ -241,7 +241,7 @@ public class GameControllerOnline : MonoBehaviour
 
     IEnumerator returnToHome()
     {
-        yield return new WaitForSecondsRealtime(5);
+        yield return new WaitForSecondsRealtime(10);
 
         SceneManager.LoadSceneAsync("MainDevelop");
     }

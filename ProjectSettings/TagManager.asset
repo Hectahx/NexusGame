@@ -18,6 +18,7 @@ TagManager:
   - gridSize
   - joinButton
   - ListContent
+  - muteButton
   layers:
   - Default
   - TransparentFX

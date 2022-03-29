@@ -8,6 +8,8 @@ using UnityEngine.SceneManagement;
 using NativeWebSocket;
 using System.Text;
 using System.Collections.Generic;
+using System.Collections;
+
 
 public class WsClient : MonoBehaviour
 {
@@ -26,31 +28,41 @@ public class WsClient : MonoBehaviour
     public TextAsset profanityList;
     public static List<Game> gameList;
     public GameObject test;
+    public GameObject reconnectButton;
+    public Text connectionText;
+    public Dropdown playerSizeDropdown;
+    public Dropdown gameModeDropdown;
+
+    bool publicServer = false;
 
     private async void Start()
     {
-
         gameId = null;
 
         DontDestroyOnLoad(this);
 
-        //ws = new WebSocket($"ws://{localIP}:{port}");
-        ws = new WebSocket($"ws://{publicIP}:{port}");
+        if (publicServer) ws = new WebSocket($"ws://{publicIP}:{port}");
+        else ws = new WebSocket($"ws://{localIP}:{port}");
 
 
         ws.OnOpen += () =>
         {
             Debug.Log("Connection open!");
+            UnityMainThread.wkr.AddJob(() =>
+            {
+                connectionText.text = "Server Status <color=green>Open</color>";
+                reconnectButton.SetActive(false);
+            });
         };
         ws.OnMessage += (message) =>
         {
             JObject response = JObject.Parse(Encoding.UTF8.GetString(message));
+
             if (response["method"].ToString() == "connect")
             {
                 clientId = response["clientId"].ToString();
-                //string games = "[\n" + response["games"].ToString() + "\n ]";
                 string gameString = response["games"].ToString();
-                Debug.Log(gameString);
+                //Debug.Log(gameString);
                 gameList = JsonConvert.DeserializeObject<List<Game>>(gameString);
             }
 
@@ -93,6 +105,15 @@ public class WsClient : MonoBehaviour
                 });
             }
         };
+        ws.OnClose += (err) =>
+        {
+            Debug.Log("The socket has been closed. Please Reconnect");
+            UnityMainThread.wkr.AddJob(() =>
+            {
+                connectionText.text = "Server Status <color=red>Closed</color>";
+                reconnectButton.SetActive(true);
+            });
+        };
 
         await ws.Connect();
 
@@ -100,41 +121,87 @@ public class WsClient : MonoBehaviour
 
     public void createRoom()
     {
-        JObject payload = new JObject();
-        payload["method"] = "create";
-        //ws.Send(payload.ToString());
-        ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
+        var playerIndex = playerSizeDropdown.value;
+        var playerSize = int.Parse(playerSizeDropdown.options[playerIndex].text);
+
+        var gameModeIndex = gameModeDropdown.value;
+        var gameMode = gameModeDropdown.options[gameModeIndex].text.ToLower();
+
+        Debug.Log(playerSize);
+        Debug.Log(gameMode);
+
+        if (nameCheck())
+        {
+
+
+            JObject payload = new JObject();
+            payload["method"] = "create";
+            payload["playerSize"] = playerSize;
+            payload["gameMode"] = gameMode;
+            //ws.Send(payload.ToString());
+            ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
+        }
     }
 
     public void joinRoom()
     {
+        if (nameCheck())
+        {
+            JObject payload = new JObject();
+            payload["method"] = "join";
+            payload["clientId"] = clientId;
+            payload["name"] = clientName;
+            payload["gameId"] = gameId;
+            //ws.Send(payload.ToString());
+            ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
+        }
+    }
+
+
+    public bool nameCheck()
+    {
         clientName = nameField.text;
+        //Debug.Log(clientName);
         if (gameIdField.text.Trim().Length > 0) gameId = gameIdField.text.Trim().ToUpper();
         if (clientName == "")
         {
-            Debug.Log("Put your name there ");
-            return;
+            Debug.Log("Put your name there");
+            return false;
         }
 
         string[] profFilter = profanityList.text.Split('\n');
+        List<string> profanity = new List<string>(profFilter);
 
-        foreach (string prof in profFilter)
+        foreach (string prof in profanity)
         {
-            if (clientName.Contains(prof))
+            if (clientName.ToLower().Contains(prof.ToLower().Trim()))
             {
                 Debug.Log("This name contains profanity, please enter a new name");
-                return;
+                StartCoroutine(profanityPopup());
+                return false;
             }
         }
 
-        JObject payload = new JObject();
-        payload["method"] = "join";
-        payload["clientId"] = clientId;
-        payload["name"] = clientName;
-        payload["gameId"] = gameId;
-        //ws.Send(payload.ToString());
-        ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
+        return true;
     }
+    public void reconnectToServer()
+    {
+        Start();
+    }
+
+    IEnumerator profanityPopup()
+    {
+
+        Canvas mainCanvas = GameObject.Find("Canvas").GetComponent<Canvas>();
+        GameObject profanityWarning = mainCanvas.transform.Find("Profanity Warning").gameObject;
+        profanityWarning.SetActive(true);
+
+        yield return new WaitForSecondsRealtime(3);
+
+        profanityWarning.SetActive(false);
+
+    }
+
 
     private async void OnApplicationQuit()
     {

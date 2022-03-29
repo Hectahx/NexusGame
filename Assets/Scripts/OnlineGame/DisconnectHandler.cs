@@ -132,9 +132,8 @@ public class DisconnectHandler : MonoBehaviour
 
                     Debug.Log($"You have won by default");
 
-                    StartCoroutine(returnToHome());
-
-
+                    //StartCoroutine(returnToHome());
+                    SceneManager.LoadSceneAsync("MainDevelop");
                 });
             }
             if (response["method"].ToString() == "noShow")
@@ -156,11 +155,22 @@ public class DisconnectHandler : MonoBehaviour
         ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
     }
 
-    IEnumerator returnToHome()
+    public IEnumerator returnToHome()
     {
         yield return new WaitForSecondsRealtime(5);
 
         SceneManager.LoadSceneAsync("MainDevelop");
+    }
+
+    public void leaveGame()
+    {
+        SceneManager.LoadSceneAsync("MainDevelop");
+        JObject payload = new JObject();
+        payload["method"] = "leaveGame";
+        payload["gameId"] = WsClient.gameId;
+        payload["color"] = WsClient.color;
+        payload["clientId"] = WsClient.clientId;
+        ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
     }
 
     void Update()

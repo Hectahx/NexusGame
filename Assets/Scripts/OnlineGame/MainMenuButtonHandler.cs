@@ -63,4 +63,25 @@ public class MainMenuButtonHandler : MonoBehaviour
         serverBrowser.SetActive(false);
     }
 
+    public void OpenCreateGameMenu()
+    {
+        Canvas mainCanvas = GameObject.Find("Canvas").GetComponent<Canvas>();
+        GameObject mainUI = mainCanvas.transform.Find("MainUIHolder").gameObject;
+        GameObject createUI = mainCanvas.transform.Find("CreateRoomHolder").gameObject;
+
+        mainUI.SetActive(false);
+        createUI.SetActive(true);
+    }
+
+    public void CloseCreateGameMenu()
+    {
+        Canvas mainCanvas = GameObject.Find("Canvas").GetComponent<Canvas>();
+        GameObject mainUI = mainCanvas.transform.Find("MainUIHolder").gameObject;
+        GameObject createUI = mainCanvas.transform.Find("CreateRoomHolder").gameObject;
+
+        mainUI.SetActive(true);
+        createUI.SetActive(false);
+    }
+
+
 }
