@@ -7,6 +7,16 @@ public class MainMenuButtonHandler : MonoBehaviour
 {
     public GameObject serverButtonPrefab;
     public InputField nameField;
+    public Dropdown gameModeDropDown;
+    public Dropdown timeDropDown;
+
+    void Start()
+    {
+        gameModeDropDown.onValueChanged.AddListener(delegate
+        {
+            gameModeDropDownChanged(gameModeDropDown);
+        });
+    }
     public void OpenHelpMenu()
     {
         Canvas mainCanvas = GameObject.Find("Canvas").GetComponent<Canvas>();
@@ -81,6 +91,18 @@ public class MainMenuButtonHandler : MonoBehaviour
 
         mainUI.SetActive(true);
         createUI.SetActive(false);
+    }
+
+    void gameModeDropDownChanged(Dropdown dropdown)
+    {
+        if (dropdown.options[dropdown.value].text.ToLower().Equals("timed"))
+        {
+            timeDropDown.gameObject.SetActive(true);
+        }
+        else
+        {
+            timeDropDown.gameObject.SetActive(false);
+        }
     }
 
 

@@ -14,16 +14,13 @@ public class GameControllerOnline : MonoBehaviour
     public List<Text> buttonL = new List<Text>();
     public static Text[] buttonList;
     public CreateGrid gridCreator;
-    private Color disColor = new Color32(53, 51, 51, 105);
-
     private WebSocket ws;
-
-
-
     public static bool playable;//this checks if the current player can play
 
     void Awake()
     {
+
+
         GameObject[] cardPanels = GameObject.FindGameObjectsWithTag("cardPanel");
         foreach (GameObject cardPanel in cardPanels) cardPanel.SetActive(false);
 
@@ -177,6 +174,16 @@ public class GameControllerOnline : MonoBehaviour
                     doomCardPanel.SetActive(false);
                 });
             }
+            if (response["method"].ToString() == "timedModeFinished")
+            {
+                UnityMainThread.wkr.AddJob(() =>
+                {
+                    Canvas timedModeCanvas = GameObject.Find("Timed Mode Canvas").GetComponent<Canvas>();
+                    timedModeCanvas.sortingOrder = 1;
+                    SetBoardInteractable(false);
+                    StartCoroutine(returnToHome());
+                });
+            }
         };
     }
 
@@ -246,11 +253,13 @@ public class GameControllerOnline : MonoBehaviour
         SceneManager.LoadSceneAsync("MainDevelop");
     }
 
-        void Update()
+    void Update()
     {
-    #if !UNITY_WEBGL || UNITY_EDITOR
+#if !UNITY_WEBGL || UNITY_EDITOR
         ws.DispatchMessageQueue();
-    #endif
+#endif
     }
+
+
 
 }

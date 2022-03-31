@@ -23,8 +23,10 @@ public class WsClient : MonoBehaviour
     public static string gameId;
     public static int size;
     public static string color;
+    public static string gameMode;
     public static JToken game;
     public static string clientName;
+    public static float timerValue;
     public TextAsset profanityList;
     public static List<Game> gameList;
     public GameObject test;
@@ -32,8 +34,11 @@ public class WsClient : MonoBehaviour
     public Text connectionText;
     public Dropdown playerSizeDropdown;
     public Dropdown gameModeDropdown;
-
-    bool publicServer = false;
+    public Dropdown timerDropDown;
+    bool publicServer = true;
+    public InputField passwordInputField;
+    public InputField mainMenuPasswordInputField;
+    string passwordText;
 
     private async void Start()
     {
@@ -66,7 +71,7 @@ public class WsClient : MonoBehaviour
                 gameList = JsonConvert.DeserializeObject<List<Game>>(gameString);
             }
 
-            if (response["method"].ToString() == "create")
+            if (response["method"].ToString() == "create")//This is the responsr from the server
             {
                 JToken game = response["game"];
                 gameId = game["id"].ToString();
@@ -86,6 +91,12 @@ public class WsClient : MonoBehaviour
             if (response["method"].ToString() == "join")
             {
                 game = response["game"];
+                gameMode = response["gameMode"].ToString();
+                if (gameMode == "timed")
+                {
+                    timerValue = int.Parse(game["timeLength"].ToString());
+                    Debug.Log(timerValue);
+                }
                 JArray clients = (JArray)game["clients"];
                 size = int.Parse(game["size"].ToString());
                 foreach (var client in clients)
@@ -119,25 +130,32 @@ public class WsClient : MonoBehaviour
 
     }
 
-    public void createRoom()
+    public void createRoom()//This is bound to the create room button in unity 
     {
         var playerIndex = playerSizeDropdown.value;
         var playerSize = int.Parse(playerSizeDropdown.options[playerIndex].text);
-
         var gameModeIndex = gameModeDropdown.value;
         var gameMode = gameModeDropdown.options[gameModeIndex].text.ToLower();
+        
+        passwordText = passwordInputField.text.Trim();
 
-        Debug.Log(playerSize);
-        Debug.Log(gameMode);
+
 
         if (nameCheck())
         {
-
-
             JObject payload = new JObject();
             payload["method"] = "create";
             payload["playerSize"] = playerSize;
             payload["gameMode"] = gameMode;
+            if (gameMode.Equals("timed")) payload["timeLength"] = timerDropDown.options[timerDropDown.value].text.ToString();
+
+            if (passwordText != "")
+            {
+                payload["isPrivate"] = true;
+                payload["password"] = passwordText;
+            }
+            else payload["isPrivate"] = false;
+
             //ws.Send(payload.ToString());
             ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
         }
@@ -147,11 +165,15 @@ public class WsClient : MonoBehaviour
     {
         if (nameCheck())
         {
+
+            if(mainMenuPasswordInputField.text.Trim().Length > 0) passwordText = mainMenuPasswordInputField.text.Trim();
+
             JObject payload = new JObject();
             payload["method"] = "join";
             payload["clientId"] = clientId;
             payload["name"] = clientName;
             payload["gameId"] = gameId;
+            payload["password"] = passwordText;
             //ws.Send(payload.ToString());
             ws.Send(Encoding.UTF8.GetBytes(payload.ToString()));
         }
@@ -161,8 +183,9 @@ public class WsClient : MonoBehaviour
     public bool nameCheck()
     {
         clientName = nameField.text;
-        //Debug.Log(clientName);
+
         if (gameIdField.text.Trim().Length > 0) gameId = gameIdField.text.Trim().ToUpper();
+
         if (clientName == "")
         {
             Debug.Log("Put your name there");

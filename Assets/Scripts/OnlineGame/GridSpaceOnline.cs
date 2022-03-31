@@ -21,9 +21,24 @@ public class GridSpaceOnline : MonoBehaviour
     private WebSocket ws;
     public static bool[] isDisabled;
     string gameId = WsClient.gameId;
-
     AudioSource buttonClickSound;
+    bool isTimed;
+    bool startTimer;
+    public float timeValue;
+    Text timeText;
 
+    void Awake()
+    {
+        if (WsClient.gameMode.Equals("timed"))
+        {
+            isTimed = true; //This is so the timer can be enabled
+            Canvas mainCanvas = GameObject.Find("Canvas").GetComponent<Canvas>();
+            GameObject timerPanel = mainCanvas.transform.Find("Timer Panel").gameObject;
+            timerPanel.SetActive(true);
+            timeText = timerPanel.GetComponentInChildren<Text>();
+            timeValue = WsClient.timerValue;
+        }
+    }
 
     private void Start()
     {
@@ -62,6 +77,7 @@ public class GridSpaceOnline : MonoBehaviour
             JObject response = JObject.Parse(Encoding.UTF8.GetString(message));
             if (response["method"].ToString() == "start")
             {
+                startTimer = true;
                 UnityMainThread.wkr.AddJob(() =>
                 {
                     Canvas waitingCanvas = GameObject.Find("Waiting Canvas").GetComponent<Canvas>();
@@ -147,9 +163,35 @@ public class GridSpaceOnline : MonoBehaviour
 
     void Update()
     {
-    #if !UNITY_WEBGL || UNITY_EDITOR
+#if !UNITY_WEBGL || UNITY_EDITOR
         ws.DispatchMessageQueue();
-    #endif
+#endif
+
+        if (isTimed && startTimer)
+        {
+            if (timeValue > 0f)
+            {
+                timeValue -= Time.deltaTime;
+            }
+            else timeValue = 0f;
+
+            DisplayTime(timeValue);
+        }
+
+    }
+
+    void DisplayTime(float timeToDisplay)
+    {
+        if (timeToDisplay < 0)
+        {
+            timeToDisplay = 0;
+        }
+
+        float minutes = Mathf.FloorToInt(timeToDisplay / 60f);
+        float seconds = Mathf.FloorToInt(timeToDisplay % 60f);
+
+        timeText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+
     }
 
 
