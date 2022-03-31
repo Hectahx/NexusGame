@@ -38,6 +38,7 @@ public class WsClient : MonoBehaviour
     bool publicServer = true;
     public InputField passwordInputField;
     public InputField mainMenuPasswordInputField;
+    WebSocketSharp.WebSocket wss;
     string passwordText;
 
     private async void Start()
@@ -48,6 +49,21 @@ public class WsClient : MonoBehaviour
 
         if (publicServer) ws = new WebSocket($"ws://{publicIP}:{port}");
         else ws = new WebSocket($"ws://{localIP}:{port}");
+
+
+
+        wss = new WebSocketSharp.WebSocket($"wss://{localIP}:4444");
+        wss.SslConfiguration.EnabledSslProtocols =  System.Security.Authentication.SslProtocols.Tls12;
+        //wss = new WebSocket($"wss://echo.websocket.org");
+
+        wss.Connect();
+
+
+        wss.OnOpen += (sender, e) =>
+        {
+            Debug.Log("Connection open on WSS!");
+        };
+
 
 
         ws.OnOpen += () =>
@@ -128,6 +144,8 @@ public class WsClient : MonoBehaviour
 
         await ws.Connect();
 
+
+
     }
 
     public void createRoom()//This is bound to the create room button in unity 
@@ -136,7 +154,7 @@ public class WsClient : MonoBehaviour
         var playerSize = int.Parse(playerSizeDropdown.options[playerIndex].text);
         var gameModeIndex = gameModeDropdown.value;
         var gameMode = gameModeDropdown.options[gameModeIndex].text.ToLower();
-        
+
         passwordText = passwordInputField.text.Trim();
 
 
@@ -166,7 +184,7 @@ public class WsClient : MonoBehaviour
         if (nameCheck())
         {
 
-            if(mainMenuPasswordInputField.text.Trim().Length > 0) passwordText = mainMenuPasswordInputField.text.Trim();
+            if (mainMenuPasswordInputField.text.Trim().Length > 0) passwordText = mainMenuPasswordInputField.text.Trim();
 
             JObject payload = new JObject();
             payload["method"] = "join";
