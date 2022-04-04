@@ -5,10 +5,10 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine.SceneManagement;
 //using HybridWebSocket;
-using NativeWebSocket;
 using System.Text;
 using System.Collections.Generic;
 using System.Collections;
+using WebSocketSharp;
 
 
 public class WsClient : MonoBehaviour
@@ -35,38 +35,24 @@ public class WsClient : MonoBehaviour
     public Dropdown playerSizeDropdown;
     public Dropdown gameModeDropdown;
     public Dropdown timerDropDown;
-    bool publicServer = true;
+    bool publicServer = false;
     public InputField passwordInputField;
     public InputField mainMenuPasswordInputField;
-    WebSocketSharp.WebSocket wss;
     string passwordText;
 
-    private async void Start()
+    private void Start()
     {
         gameId = null;
 
         DontDestroyOnLoad(this);
+        /*
+        if (publicServer) ws = new WebSocket($"wss://{publicIP}:{port}");
+        else ws = new WebSocket($"wss://{localIP}:{port}");
 
-        if (publicServer) ws = new WebSocket($"ws://{publicIP}:{port}");
-        else ws = new WebSocket($"ws://{localIP}:{port}");
-
-
-
-        wss = new WebSocketSharp.WebSocket($"wss://{localIP}:4444");
-        wss.SslConfiguration.EnabledSslProtocols =  System.Security.Authentication.SslProtocols.Tls12;
-        //wss = new WebSocket($"wss://echo.websocket.org");
-
-        wss.Connect();
+        ws.SslConfiguration.EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12;
 
 
-        wss.OnOpen += (sender, e) =>
-        {
-            Debug.Log("Connection open on WSS!");
-        };
-
-
-
-        ws.OnOpen += () =>
+        ws.OnOpen += (sender, e) =>
         {
             Debug.Log("Connection open!");
             UnityMainThread.wkr.AddJob(() =>
@@ -75,9 +61,29 @@ public class WsClient : MonoBehaviour
                 reconnectButton.SetActive(false);
             });
         };
-        ws.OnMessage += (message) =>
+        */
+        ws = Login.ws;
+        clientId = Login.clientId;
+        if (Login.clientName != null)
         {
-            JObject response = JObject.Parse(Encoding.UTF8.GetString(message));
+            clientName = Login.clientName;
+            nameField.text = Login.clientName;
+            nameField.enabled = false;
+        }
+        //ws.OnMessage += (message) => //This is for NativeWebSocket
+        ws.OnMessage += (sender, e) =>
+        {
+            //JObject response = JObject.Parse(Encoding.UTF8.GetString(e));
+            JObject response;
+
+            if (e.IsText)
+            {
+                response = JObject.Parse(e.Data);
+            }
+            else
+            {
+                response = JObject.Parse(Encoding.UTF8.GetString(e.RawData));
+            }
 
             if (response["method"].ToString() == "connect")
             {
@@ -87,7 +93,7 @@ public class WsClient : MonoBehaviour
                 gameList = JsonConvert.DeserializeObject<List<Game>>(gameString);
             }
 
-            if (response["method"].ToString() == "create")//This is the responsr from the server
+            if (response["method"].ToString() == "create")//This is the response from the server
             {
                 JToken game = response["game"];
                 gameId = game["id"].ToString();
@@ -131,21 +137,33 @@ public class WsClient : MonoBehaviour
                     SceneManager.LoadScene("GameOnline");
                 });
             }
+            if (response["method"].ToString() == "serverBrowser")
+            {
+                string gameString = response["games"].ToString();
+                //Debug.Log(gameString);
+                WsClient.gameList = JsonConvert.DeserializeObject<List<Game>>(gameString);
+            }
+            if(response["method"].ToString() == "signupComplete"){
+                
+            }
         };
-        ws.OnClose += (err) =>
+        ws.OnClose += (sender, e) =>
         {
-            Debug.Log("The socket has been closed. Please Reconnect");
+            Debug.Log(e.Reason);
+            //Debug.Log("The socket has been closed. Please Reconnect");
             UnityMainThread.wkr.AddJob(() =>
             {
                 connectionText.text = "Server Status <color=red>Closed</color>";
                 reconnectButton.SetActive(true);
             });
         };
+        ws.OnError += (sender, e) =>
+        {
+            //Debug.Log(e.Exception);
+        };
 
-        await ws.Connect();
 
-
-
+        ws.Connect();
     }
 
     public void createRoom()//This is bound to the create room button in unity 
@@ -165,6 +183,7 @@ public class WsClient : MonoBehaviour
             payload["method"] = "create";
             payload["playerSize"] = playerSize;
             payload["gameMode"] = gameMode;
+            payload["clientId"] = clientId;
             if (gameMode.Equals("timed")) payload["timeLength"] = timerDropDown.options[timerDropDown.value].text.ToString();
 
             if (passwordText != "")
@@ -244,15 +263,13 @@ public class WsClient : MonoBehaviour
     }
 
 
-    private async void OnApplicationQuit()
+    private void OnApplicationQuit()
     {
-        await ws.Close();
+
+        ws.Close();
     }
 
     private void Update()
     {
-#if !UNITY_WEBGL || UNITY_EDITOR
-        ws.DispatchMessageQueue();
-#endif
     }
 }

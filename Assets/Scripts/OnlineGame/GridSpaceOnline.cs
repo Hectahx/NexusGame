@@ -3,9 +3,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-//using WebSocketSharp;
+using WebSocketSharp;
 //using HybridWebSocket;
-using NativeWebSocket;
+//using NativeWebSocket;
 using Newtonsoft.Json.Linq;
 using System.Text;
 
@@ -70,11 +70,21 @@ public class GridSpaceOnline : MonoBehaviour
 
         ws = WsClient.ws;
 
-        //ws.OnMessage += (sender, message) =>
-        ws.OnMessage += (message) =>
+        //ws.OnMessage += (message) =>
+        ws.OnMessage += (sender, e) =>
         {
-            //JObject response = JObject.Parse(message.Data);
-            JObject response = JObject.Parse(Encoding.UTF8.GetString(message));
+            //JObject response = JObject.Parse(Encoding.UTF8.GetString(message));
+
+            JObject response;
+
+            if (e.IsText)
+            {
+                response = JObject.Parse(e.Data);
+            }
+            else
+            {
+                response = JObject.Parse(Encoding.UTF8.GetString(e.RawData));
+            }
             if (response["method"].ToString() == "start")
             {
                 startTimer = true;
@@ -163,10 +173,6 @@ public class GridSpaceOnline : MonoBehaviour
 
     void Update()
     {
-#if !UNITY_WEBGL || UNITY_EDITOR
-        ws.DispatchMessageQueue();
-#endif
-
         if (isTimed && startTimer)
         {
             if (timeValue > 0f)
